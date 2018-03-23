@@ -19,4 +19,42 @@
 ;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 (ns colombian.weather.data.main
-  (:require [clojure.string :as str]))
+  (:require [clojure.string :as str]
+            [taoensso.timbre :as log]))
+
+(defn process-file-by-lines
+  "Process file reading it line-by-line"
+  ([file]
+   (process-file-by-lines file identity))
+  ([file process-fn]
+   (process-file-by-lines file process-fn println))
+  ([file process-fn output-fn]
+   (with-open [rdr (clojure.java.io/reader file)]
+     (doseq [line (line-seq rdr)]
+       (output-fn
+        (process-fn line))))))
+
+(defn- parse-date [line]
+  )
+
+(defn- parse-measurments [line]
+  )
+
+(defn parser [line]
+  (cond
+    (re-find #"DEL VIENTO EN SUPERFICIE" line) (parse-date)
+    (re-find #"^\s{7,8}\d{1,2}" line) (parse-measur ments line)))
+
+(defn lazy-file-lines [file]
+  (letfn [(helper [rdr]
+                (lazy-seq
+                  (if-let [line (.readLine rdr)]
+                    (cons (parser line) (helper rdr))
+                    (do (.close rdr) nil))))]
+        (helper (clojure.java.io/reader file))))
+
+(defn parse [file]
+  (lazy-file-lines file))
+
+(defn file->csv [filepath]
+  (-> filepath clojure.java.io/resource parse))

@@ -20,6 +20,7 @@
 
 (ns colombian.weather.data.main
   (:require [clojure.string :as str]
+            [clojure.java.io :as io]
             [taoensso.timbre :as log]))
 
 (defn process-file-by-lines
@@ -29,32 +30,47 @@
   ([file process-fn]
    (process-file-by-lines file process-fn println))
   ([file process-fn output-fn]
-   (with-open [rdr (clojure.java.io/reader file)]
+   (with-open [rdr (io/reader file)]
      (doseq [line (line-seq rdr)]
        (output-fn
         (process-fn line))))))
 
 (defn- parse-date [line]
-  )
+  line)
 
 (defn- parse-measurments [line]
-  )
+  (let [body (.substring line 13)
+        parts (butlast (loop [b body parts []]
+                         (if (= (count b) 0)
+                           parts
+                           (recur (.substring b 8)
+                                  (conj parts (.substring b 0 8))))))
+        new-line (reduce str (map #(str % ",") parts))]
+    new-line))
 
 (defn parser [line]
   (cond
-    (re-find #"DEL VIENTO EN SUPERFICIE" line) (parse-date)
-    (re-find #"^\s{7,8}\d{1,2}" line) (parse-measur ments line)))
+    (re-find #"DEL VIENTO EN SUPERFICIE" line) (parse-date line)
+    (re-find #"^\s{7,8}\d{1,2}" line) (parse-measurments line)))
 
 (defn lazy-file-lines [file]
   (letfn [(helper [rdr]
                 (lazy-seq
-                  (if-let [line (.readLine rdr)]
-                    (cons (parser line) (helper rdr))
+                 (if-let [line (.readLine rdr)]
+                   (if-let [parsed-line (parser line)]
+                     (cons parsed-line (helper rdr))
+                     (helper rdr))
                     (do (.close rdr) nil))))]
         (helper (clojure.java.io/reader file))))
 
 (defn parse [file]
   (lazy-file-lines file))
 
+(defn col->csv [data]
+  (with-open [wrt (io/writer "data.csv")]
+  (doseq [line data]
+    (.write wrt line)
+    (.newLine wrt))))
+
 (defn file->csv [filepath]
-  (-> filepath clojure.java.io/resource parse))
+  (-> filepath clojure.java.io/resource parse col->csv))

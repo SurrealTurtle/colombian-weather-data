@@ -18,10 +18,11 @@
 ;; You should have received a copy of the GNU Affero General Public License
 ;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-(ns colombian.weather.data.main
+(ns colombian-weather-odata.main
   (:require [clojure.string :as str]
             [clojure.java.io :as io]
-            [taoensso.timbre :as log]))
+            [taoensso.timbre :as log])
+  (:gen-class))
 
 (defn process-file-by-lines
   "Process file reading it line-by-line"
@@ -48,9 +49,14 @@
         new-line (reduce str (map #(str % ",") parts))]
     new-line))
 
+(defn parse-hour-label [line]
+  (let [parts (str/split (log/spy line) #"\|")]
+    (reduce str (map #(str % ",") (rest (rest parts))))))
+
 (defn parser [line]
   (cond
     (re-find #"DEL VIENTO EN SUPERFICIE" line) (parse-date line)
+    (re-find #"\| \\ HORA\|" line) (parse-hour-label line)
     (re-find #"^\s{7,8}\d{1,2}" line) (parse-measurments line)))
 
 (defn lazy-file-lines [file]
@@ -74,3 +80,8 @@
 
 (defn file->csv [filepath]
   (-> filepath clojure.java.io/resource parse col->csv))
+
+(defn -main [& args]
+  (if (= 1 (count args))
+    (file->csv (first args))
+    (println "To run the program ")))

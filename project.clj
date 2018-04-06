@@ -12,8 +12,10 @@
 
   :resource-paths ["resources" "test-resources"]
 
-  :main colombian-weather-data.main
+  :uberjar {:source-paths ["src"]
+            :aot :all
+            :main colombian-weather-data.main}
   :uberjar-name "colombian-weather-data.jar"
   :profiles {:dev {:dependencies [[midje "1.8.3"]]
-                   :repl-options {:init-ns colombian.weather.data.main}}})
+                   :repl-options {:init-ns colombian-weather-data.main}}})
  

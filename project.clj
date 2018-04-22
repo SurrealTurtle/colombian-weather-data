@@ -12,6 +12,8 @@
 
   :resource-paths ["resources" "test-resources"]
 
+  :main colombian-weather-data.main
+  
   :uberjar {:source-paths ["src"]
             :aot :all
             :main colombian-weather-data.main}
